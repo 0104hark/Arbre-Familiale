@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌳 Arbre généalogique — Famille (iPhone & Android)</title>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>🌳 Arbre généalogique — Famille V51 (iPhone &amp; Android)</title>
 <style>
 :root{
   --bg:#f7f3ea;
@@ -187,7 +188,8 @@ button:active{transform:scale(.96)}
 .modalbox{width:min(430px,100%);background:#fffdf8;border-radius:22px;padding:20px;box-shadow:0 20px 70px rgba(0,0,0,.28)}
 .modalbox h2{font-family:Georgia,serif;margin:0 0 14px}
 .modalbox input,.modalbox select,.modalbox textarea{width:100%;padding:11px;border:1px solid #d8c8a7;border-radius:12px;margin:6px 0 12px;font:inherit;background:#fff}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.advanced-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}.advanced-actions button{font-size:12px;padding:9px 8px}.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.color-editor-row{display:flex;align-items:center;gap:10px;margin:5px 0 2px}.color-editor-row input[type=color]{width:48px;height:38px;padding:3px;border:1px solid #c9bda9;border-radius:10px;background:#fff;cursor:pointer}.color-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.color-preset{width:24px!important;height:24px!important;min-width:24px;padding:0!important;border-radius:50%;background:var(--c)!important;border:2px solid rgba(70,55,35,.22)!important;cursor:pointer}.color-preset:hover{transform:scale(1.1)}.color-reset{width:28px!important;height:28px!important;padding:0!important;border-radius:50%;background:#fff!important;border:1px solid #c9bda9!important;cursor:pointer}.color-help{display:block;color:#776c5d;font-size:11px;margin:3px 0 8px}.person-custom-color{background:var(--person-color)!important;border-color:color-mix(in srgb,var(--person-color),#6b5840 28%)!important;color:var(--person-text-color,#2f281f)!important}.person-custom-color .tag{color:inherit!important;border-color:currentColor!important;background:rgba(255,255,255,.42)!important}
 .modal-actions button.primary{background:#2b241d;color:white}
 .editing .card,.editing .child-card,.editing .grandchild{cursor:pointer;outline:2px dashed rgba(200,155,60,.45);outline-offset:2px}
 .person-selected{box-shadow:0 0 0 4px rgba(200,155,60,.35),0 12px 30px rgba(80,55,15,.18)!important}
@@ -254,677 +256,105 @@ button:active{transform:scale(.96)}
 #loginScreen.hidden{display:none}
 body.locked #appContent{visibility:hidden}
 
+
+/* ===== Éditeur familial avancé ===== */
+#editorGate .modalbox{max-width:430px}
+#editorGate .danger{background:#a33b32;color:#fff}
+#editModal .advanced-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#editModal .advanced-actions button{font-size:13px}
+#editModal .danger{background:#a33b32;color:#fff}
+#editModal .secondary{background:#f4ead5}
+.editor-on-badge{position:fixed;z-index:121;left:12px;top:12px;padding:8px 11px;border-radius:12px;background:#2b241d;color:#fff;font-size:12px;font-weight:800;display:none;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.editor-on-badge.show{display:block}
+@media(max-width:700px){#editModal .advanced-actions{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body class="locked">
+<script type="module" id="firebase-auth-bridge">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  inMemoryPersistence
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDCeMihEO5Sh0wpu7GKZJRFLlpaUY913Zw",
+  authDomain: "arbre-familial-831c3.firebaseapp.com",
+  databaseURL: "https://arbre-familial-831c3-default-rtdb.firebaseio.com/",
+  projectId: "arbre-familial-831c3",
+  storageBucket: "arbre-familial-831c3.firebasestorage.app",
+  messagingSenderId: "678873720616",
+  appId: "1:678873720616:web:cf42805e8f7b751988d21d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+// No Firebase Auth persistence in the downloaded/local browser context.
+// The shared tree itself is stored only in Realtime Database.
+const authPersistenceReady = setPersistence(auth, inMemoryPersistence).catch(()=>{});
+
+window.firebaseAuthBridge = {
+  signIn: async (email, password) => { await authPersistenceReady; return signInWithEmailAndPassword(auth, email, password); },
+  signOut: () => signOut(auth),
+  getCurrentUser: () => auth.currentUser,
+  getIdToken: async (forceRefresh=false) => auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null,
+  onAuthStateChanged: (cb) => onAuthStateChanged(auth, cb)
+};
+</script>
+
 <div id="loginScreen">
-  <div id="loginBox">
-    <div id="loginIcon">🔐</div>
-    <h1>Arbre généalogique familial</h1>
-    <p>Accès privé<br>Entre le mot de passe pour accéder à l’arbre.</p>
-    <form id="loginForm">
-      <input id="passwordInput" type="password" placeholder="Mot de passe" autocomplete="current-password" aria-label="Mot de passe">
-      <button id="loginButton" type="submit">Accéder à l’arbre →</button>
-      <div id="loginError" aria-live="polite"></div>
-    </form>
-  </div>
+<div id="loginBox">
+<div id="loginIcon">🔐</div>
+<h1>Arbre généalogique familial</h1>
+<p>Accès privé<br/>Entre le mot de passe pour accéder à l’arbre.</p>
+<form id="loginForm">
+<input aria-label="Mot de passe" autocomplete="current-password" id="passwordInput" placeholder="Mot de passe" type="password"/>
+<button id="loginButton" type="submit">Accéder à l’arbre →</button>
+<div aria-live="polite" id="loginError"></div>
+</form>
+</div>
 </div>
 <div id="appContent">
 <div id="toolbar">
-  <div id="navTitle">🧭 <span>Navigation</span> <span>⌄</span></div>
-  <div id="navControls">
-   <button onclick="zoomBy(1.12)">＋ Zoom</button>
-   <button onclick="zoomBy(.89)">− Zoom</button>
-    <button onclick="resetView()">↺ Réinitialiser</button>
-    <button onclick="fitTree()">⌗ Voir tout</button>
-    <span id="zoomLevel">Zoom : 35%</span>
-  </div>
+<div id="navTitle">🧭 <span>Navigation</span> <span>⌄</span></div>
+<div id="navControls">
+<button onclick="zoomBy(1.12)">＋ Zoom</button>
+<button onclick="zoomBy(.89)">− Zoom</button>
+<button onclick="resetView()">↺ Réinitialiser</button>
+<button onclick="fitTree()">⌗ Voir tout</button>
+<span id="zoomLevel">Zoom : 35%</span>
 </div>
-
-
+</div>
 <div id="featurebar">
-  <button onclick="toggleAllBranches()">🌿 Branches</button>
-  <button onclick="toggleEditMode()">✏️ Édition</button>
-  <button onclick="animateBranches()">✨ Animation</button>
-  <button onclick="showDescendantsPrompt()">🌳 Descendants de…</button>
-  <button onclick="toggleStats()">📊 Statistiques</button>
-  <button onclick="toggleMiniMap()">🗺️ Mini-carte</button>
-   <button onclick="toggleFamilyMode()">👪 Famille proche</button>
-   <button onclick="showLegend()">🗂️ Légende</button>
-  <button onclick="showTributes()">🕊️ Hommages</button>
-   <button onclick="shareTree()">🔗 Partager</button>
-  <button onclick="exportTree()">📤 Exporter</button>
+<button onclick="toggleAllBranches()">🌿 Branches</button>
+<button onclick="toggleEditMode()">✏️ Édition</button><button onclick="addRootBranch()">🌳 + Branche</button><button onclick="restoreDeletedPerson()">♻️ Restaurer</button>
+<button onclick="animateBranches()">✨ Animation</button>
+<button onclick="showDescendantsPrompt()">🌳 Descendants de…</button>
+<button onclick="toggleStats()">📊 Statistiques</button>
+<button onclick="toggleMiniMap()">🗺️ Mini-carte</button>
+<button onclick="toggleFamilyMode()">👪 Famille proche</button>
+<button onclick="showLegend()">🗂️ Légende</button>
+<button onclick="showTributes()">🕊️ Hommages</button>
+<button onclick="shareTree()">🔗 Partager</button>
+<button onclick="exportTree()">📤 Exporter</button>
+<button onclick="cloudSyncStatus()">☁️ Synchronisation</button>
 </div>
-<div id="tributeBackdrop" class="tribute-backdrop" onclick="closePanels()"></div>
+<div class="tribute-backdrop" id="tributeBackdrop" onclick="closePanels()"></div>
 <div id="statsPanel"></div>
 <div id="miniMap"></div>
 <div id="descPanel"></div>
 <div id="editHint">✏️ Mode édition activé : appuie sur une personne pour modifier son prénom, son statut ou sa note, puis appuie sur Enregistrer.</div>
-<div id="editModal" class="modal">
-  <div class="modalbox">
-    <h2>Modifier la personne</h2>
-    <label>Prénom / nom</label>
-    <input id="editName" type="text">
-    <label>Statut</label>
-    <select id="editStatus"><option value="normal">Normal</option><option value="deceased">Décédé 🕊️</option></select>
-    <label>Note d’hommage (facultatif)</label>
-    <textarea id="editNote" rows="3" placeholder="Un petit mot, un souvenir…"></textarea>
-    <div class="modal-actions"><button onclick="closeEdit()">Annuler</button><button class="primary" onclick="saveEdit()">Enregistrer</button></div>
-  </div>
-</div>
-
-<div id="viewport">
-  <div id="world">
-    <main id="tree">
-      <section class="hero">
-        <div class="crest">🌳</div>
-        <h1>Arbre généalogique</h1>
-        <p>Une histoire de famille, de génération en génération</p>
-      </section>
-
-      <div class="rebecca deceased-person" data-person="Rebecca">
-        <span class="role">À l'origine de cette branche familiale</span>
-        <div class="name">Rebecca</div>
-        <div style="margin-top:8px;font-size:13px;color:#806321">En mémoire et en honneur ❤️</div>
-      </div>
-
-      <section class="roots">
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Céline</div></div>
-          <div class="children">
-            <div class="child-wrap has-kids"><div class="child-card">Papy</div><div class="grandchildren">
-              <div class="grandchild">David</div><div class="grandchild deceased-card">Dan</div><div class="grandchild">Davina</div><div class="grandchild">Grâce</div><div class="grandchild">Gracié</div><div class="grandchild">Daniella</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Pasy</div><div class="grandchildren">
-              <div class="grandchild">Glody</div><div class="grandchild">Joël</div><div class="grandchild">Reddy</div><div class="grandchild">Gaël</div><div class="grandchild">Esther</div>
-            </div></div>
-            <div class="child-wrap"><div class="child-card">Blaise</div></div>
-            <div class="child-wrap"><div class="child-card">Olivier</div></div>
-            
-            <div class="child-wrap has-kids"><div class="child-card">Gracia</div><div class="grandchildren">
-              <div class="grandchild">Predinelle</div><div class="grandchild">Gabriella</div><div class="grandchild baby">1 bébé à compléter</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Déborah</div><div class="grandchildren"><div class="grandchild">Noham</div></div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Lysie</div><div class="grandchildren"><div class="grandchild">Théo</div><div class="grandchild">Éric</div></div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Ursule</div><div class="grandchildren"><div class="grandchild">Alex</div><div class="grandchild">Yohan</div><div class="grandchild">Esther</div></div></div>
-            <div class="child-wrap"><div class="child-card">Crépinе</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Enfant de Rebecca</span><div class="name">Paul</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Wyvine</div></div>
-            <div class="child-wrap"><div class="child-card deceased-card">Jean-Paul</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card deceased-card"><span class="tag">Enfant de Rebecca</span><div class="name">Hervé</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Gradi</div></div>
-            <div class="child-wrap"><div class="child-card">Dan</div></div>
-            <div class="child-wrap"><div class="child-card">Dimercia</div></div>
-            <div class="child-wrap"><div class="child-card">Glorianna</div></div>
-            <div class="child-wrap"><div class="child-card">Orien</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Enfant de Rebecca</span><div class="name">Mila</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Christian</div></div>
-            <div class="child-wrap"><div class="child-card">Rosette</div></div>
-            <div class="child-wrap"><div class="child-card deceased-card">Manu</div></div>
-            <div class="child-wrap"><div class="child-card">Abigaël</div></div>
-            <div class="child-wrap"><div class="child-card">Jaël</div></div>
-            <div class="child-wrap"><div class="child-card">Michée</div></div>
-            <div class="child-wrap"><div class="child-card">Mervedie</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Esther</div></div>
-          <div class="children">
-            <div class="child-wrap has-kids"><div class="child-card">Gracié</div><div class="grandchildren">
-              <div class="grandchild">Prisca</div><div class="grandchild">Emondie</div><div class="grandchild">Indrha</div><div class="grandchild">Anddia</div><div class="grandchild">Harmonie</div><div class="grandchild">Urssiah</div><div class="grandchild">Yohan</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Nadine</div><div class="grandchildren">
-              <div class="grandchild">Arnel</div><div class="grandchild">Roshan</div><div class="grandchild">Léanne</div><div class="grandchild">Johan</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Régine</div><div class="grandchildren">
-              <div class="grandchild">Evan</div><div class="grandchild">Nolan</div><div class="grandchild">Yohan</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Patrick</div><div class="grandchildren">
-               <div class="grandchild">Esthy</div><div class="grandchild">Estévana</div><div class="grandchild">Estève</div><div class="grandchild deceased-card">Etiel</div><div class="grandchild">Enaëlle</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Steeve</div><div class="grandchildren">
-              <div class="grandchild">Karla</div><div class="grandchild">Ketan</div><div class="grandchild">Kevan</div><div class="grandchild">Keydan</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Inès</div><div class="grandchildren">
-              <div class="grandchild">Imelda</div><div class="grandchild">Hilda</div><div class="grandchild">Idan</div><div class="grandchild">Ilyan</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Jorde</div><div class="grandchildren"><div class="grandchild">Raina</div></div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Kim</div><div class="grandchildren">
-              <div class="grandchild">Neiss</div><div class="grandchild">Helness</div><div class="grandchild">Joffrey</div><div class="grandchild">Joy</div><div class="grandchild">Ethan</div>
-            </div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Simon</div></div>
-          <div class="children">
-            <div class="child-wrap has-kids"><div class="child-card">Arlène</div><div class="grandchildren"><div class="grandchild">Elianna</div></div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Gauthier</div><div class="grandchildren"><div class="grandchild">Eldhad</div><div class="grandchild">Eliot</div></div></div>
-            <div class="child-wrap"><div class="child-card">Gracia</div></div>
-            <div class="child-wrap"><div class="child-card">Naomie</div></div>
-            <div class="child-wrap"><div class="child-card">Landry</div></div>
-            <div class="child-wrap"><div class="child-card">Aisha</div></div>
-            <div class="child-wrap"><div class="child-card">Bel-Ange</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Cathy</div></div>
-          <div class="children">
-            <div class="child-wrap has-kids"><div class="child-card">Leaticia</div><div class="grandchildren">
-              <div class="grandchild">Jessica</div><div class="grandchild">Camila</div><div class="grandchild">Médiatricia</div><div class="grandchild">Soraya</div><div class="grandchild">Merdi</div><div class="grandchild">Blessing</div><div class="grandchild">Ericia</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Francline</div><div class="grandchildren"><div class="grandchild">Lawrence</div></div></div>
-            <div class="child-wrap"><div class="child-card">Prince</div></div>
-            <div class="child-wrap"><div class="child-card">Prisca</div></div>
-            <div class="child-wrap"><div class="child-card">Ornella</div></div>
-            <div class="child-wrap"><div class="child-card">Gédéon</div></div>
-            <div class="child-wrap"><div class="child-card">Manassé</div></div>
-            <div class="child-wrap"><div class="child-card">Gloire</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Jackie</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Talien</div></div>
-            <div class="child-wrap"><div class="child-card">Amiel</div></div>
-            <div class="child-wrap"><div class="child-card">Yann</div></div>
-            <div class="child-wrap"><div class="child-card">Gabi</div></div>
-            <div class="child-wrap"><div class="child-card">Hardi</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Alidor</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Giresse</div></div>
-            <div class="child-wrap"><div class="child-card">Merdi</div></div>
-            <div class="child-wrap"><div class="child-card">Divine</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Zazou</div></div>
-          <div class="children">
-            <div class="child-wrap"><div class="child-card">Fani</div></div>
-            <div class="child-wrap"><div class="child-card">Ruth</div></div>
-            <div class="child-wrap"><div class="child-card">Irène</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Monique</div></div>
-          <div class="children">
-            <div class="child-wrap has-kids"><div class="child-card">Dodo</div><div class="grandchildren">
-              <div class="grandchild" style="border-color:#c89b3c">Israël
-                <div style="margin-top:7px;font-size:12px;color:#7d7062">↳ Anaya · Leaden</div>
-              </div>
-              <div class="grandchild">Simon</div><div class="grandchild">Gracia</div><div class="grandchild">Bénédicte</div><div class="grandchild">Dimercia</div><div class="grandchild">Raoul</div><div class="grandchild">Jenny</div>
-            </div></div>
-            <div class="child-wrap has-kids"><div class="child-card">Mimi</div><div class="grandchildren">
-              <div class="grandchild">Doudou</div><div class="grandchild">Âgée</div><div class="grandchild">Dina</div>
-              <div class="child-wrap has-kids"><div class="child-card">Nicole</div><div class="grandchildren"><div class="grandchild">Tritina</div></div></div>
-              <div class="grandchild">Yvette</div><div class="grandchild">Jourdain</div><div class="grandchild">Jenovic</div><div class="grandchild">Elnovic</div><div class="grandchild">Elnose</div>
-            </div></div>
-            <div class="child-wrap"><div class="child-card">Raoul</div></div>
-          </div>
-        </div>
-
-        <div class="root">
-          <div class="card"><span class="tag">Parent</span><div class="name">Branche à compléter</div></div>
-          <div class="children"><div class="child-wrap"><div class="child-card baby">De nouveaux descendants à ajouter…</div></div></div>
-        </div>
-
-      </section>
-
-      <div class="footer">❤️ Une famille, plusieurs générations, une seule histoire.</div>
-    </main>
-  </div>
-</div>
-
-<script>
-const viewport=document.getElementById("viewport");
-const world=document.getElementById("world");
-const zoomText=document.getElementById("zoomLevel");
-
-let scale=.35,x=30,y=70;
-
-function render(){
-  world.style.transform=`translate(${x}px,${y}px) scale(${scale})`;
-  zoomText.textContent=`Zoom : ${Math.round(scale*100)}%`;
-}
-function zoomBy(factor,cx=innerWidth/2,cy=innerHeight/2){
-  const old=scale;
-  const next=Math.max(.05,Math.min(5,old*factor));
-  const wx=(cx-x)/old, wy=(cy-y)/old;
-  scale=next;x=cx-wx*scale;y=cy-wy*scale;render();
-}
-function resetView(){scale=.35;x=30;y=70;render()}
-function fitTree(){
-  const tree=document.getElementById("tree");
-  if(!tree)return;
-  const contentW=Math.max(1,tree.scrollWidth);
-  const contentH=Math.max(1,tree.scrollHeight);
-  const vw=Math.max(1,window.innerWidth);
-  const vh=Math.max(1,window.innerHeight);
-  const sx=vw/contentW, sy=vh/contentH;
-  scale=Math.max(.05,Math.min(5,Math.min(sx,sy)*.92));
-  x=(vw-contentW*scale)/2;
-  y=(vh-contentH*scale)/2;
-  render();
-}
-
- /* Souris et tactile sont séparés volontairement :
-    Safari iPhone gère ainsi le pincement comme un vrai zoom, sans transformer
-    le geste en déplacement horizontal ou vertical. */
- let mouseGesture=null;
- viewport.addEventListener("pointerdown",e=>{
-   if(e.pointerType!=="mouse")return;
-   mouseGesture={x:e.clientX,y:e.clientY};
-   viewport.classList.add("dragging");
-   viewport.setPointerCapture?.(e.pointerId);
- });
- viewport.addEventListener("pointermove",e=>{
-   if(!mouseGesture||e.pointerType!=="mouse")return;
-   x+=e.clientX-mouseGesture.x;y+=e.clientY-mouseGesture.y;
-   mouseGesture={x:e.clientX,y:e.clientY};render();
- });
- function endMouseGesture(){
-   if(mouseGesture)viewport.classList.remove("dragging");
-   mouseGesture=null;
- }
- viewport.addEventListener("pointerup",endMouseGesture);
- viewport.addEventListener("pointercancel",endMouseGesture);
-
- const activePointers=new Map();
-  let gestureState=null;
-
-  function pointerCenter(){
-    const pts=[...activePointers.values()];
-    if(!pts.length)return {x:innerWidth/2,y:innerHeight/2};
-    return pts.reduce((a,p)=>({x:a.x+p.x/pts.length,y:a.y+p.y/pts.length}),{x:0,y:0});
-  }
-  function pointerDistance(){
-    const pts=[...activePointers.values()];
-    if(pts.length<2)return 0;
-    return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
-  }
-
-  viewport.addEventListener("pointerdown",e=>{
-    if(e.pointerType==="mouse"){
-      mouseGesture={x:e.clientX,y:e.clientY};
-      viewport.classList.add("dragging");
-      viewport.setPointerCapture?.(e.pointerId);
-      return;
-    }
-
-    activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    viewport.setPointerCapture?.(e.pointerId);
-
-    if(activePointers.size===1){
-      gestureState={mode:"pan",x:e.clientX,y:e.clientY};
-    }else if(activePointers.size===2){
-      gestureState={
-        mode:"pinch",
-        center:pointerCenter(),
-        distance:Math.max(1,pointerDistance())
-      };
-    }
-  });
-
-  viewport.addEventListener("pointermove",e=>{
-    if(e.pointerType==="mouse"){
-      if(!mouseGesture)return;
-      x+=e.clientX-mouseGesture.x;
-      y+=e.clientY-mouseGesture.y;
-      mouseGesture={x:e.clientX,y:e.clientY};
-      render();
-      return;
-    }
-
-    if(!activePointers.has(e.pointerId))return;
-    activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});
-
-    if(activePointers.size===1&&gestureState?.mode==="pan"){
-      x+=e.clientX-gestureState.x;
-      y+=e.clientY-gestureState.y;
-      gestureState.x=e.clientX;
-      gestureState.y=e.clientY;
-      render();
-    }else if(activePointers.size>=2){
-      const c=pointerCenter();
-      const oldScale=scale;
-      const d=Math.max(1,pointerDistance());
-      const factor=d/(gestureState?.distance||d);
-      const next=Math.max(.05,Math.min(5,oldScale*factor));
-
-      x+=c.x-(gestureState?.center?.x||c.x);
-      y+=c.y-(gestureState?.center?.y||c.y);
-
-      const wx=(c.x-x)/oldScale;
-      const wy=(c.y-y)/oldScale;
-      scale=next;
-      x=c.x-wx*scale;
-      y=c.y-wy*scale;
-      render();
-
-      gestureState={mode:"pinch",center:c,distance:d};
-    }
-  });
-
-  function endPointer(e){
-    if(e.pointerType==="mouse"){
-      if(mouseGesture)viewport.classList.remove("dragging");
-      mouseGesture=null;
-      return;
-    }
-    activePointers.delete(e.pointerId);
-    try{viewport.releasePointerCapture?.(e.pointerId)}catch(_){}
-    if(activePointers.size===0){
-      gestureState=null;
-    }else if(activePointers.size===1){
-      const p=[...activePointers.values()][0];
-      gestureState={mode:"pan",x:p.x,y:p.y};
-    }
-  }
-
-  viewport.addEventListener("pointerup",endPointer);
-  viewport.addEventListener("pointercancel",endPointer);
-  viewport.addEventListener("lostpointercapture",e=>{
-    if(e.pointerType!=="mouse")activePointers.delete(e.pointerId);
-  });
-
-  let lastVW=window.innerWidth,lastVH=window.innerHeight;
-window.addEventListener("resize",()=>{
-  const vw=window.innerWidth,vh=window.innerHeight;
-  if(Math.abs(vw-lastVW)>20||Math.abs(vh-lastVH)>20){
-    lastVW=vw;lastVH=vh;fitTree();
-  }else render();
-});
-window.addEventListener("orientationchange",()=>setTimeout(fitTree,180));
-render();
-
-
-/* ===== Interactivité avancée ===== */
-let editing=false, editTarget=null;
- const STORAGE_KEY='famille_arbre_v6_state';
-function personText(el){return (el.querySelector('.name')||el).textContent.trim()}
-function allPersonElements(){return [...document.querySelectorAll('.root>.card,.child-card,.grandchild')].filter(e=>e.textContent.trim())}
-function markDeceased(){
-  document.querySelectorAll('.grandchild').forEach(e=>{
-    if(normalizeSearch(e.textContent)==='dan') e.classList.add('deceased-card');
-  });
-}
-function toggleAllBranches(){
-  const roots=[...document.querySelectorAll('.root')];
-  const anyOpen=roots.some(r=>!r.classList.contains('collapsed'));
-  roots.forEach(r=>r.classList.toggle('collapsed',anyOpen));
-}
-function animateBranches(){
-  document.querySelectorAll('.root').forEach(r=>{
-    r.classList.remove('animate-branch'); void r.offsetWidth; r.classList.add('animate-branch');
-  });
-}
-function toggleNav(){
-  document.getElementById('toolbar').classList.toggle('open');
-}
-function closePanels(){
-  ['statsPanel','miniMap','descPanel'].forEach(id=>document.getElementById(id).style.display='none');
-  document.getElementById('tributeBackdrop').classList.remove('open');
-  document.getElementById('descPanel').classList.remove('tribute-panel');
-}
-function toggleStats(){
-  const p=document.getElementById('statsPanel');
-  if(p.style.display==='block'){p.style.display='none';return}
-  const roots=document.querySelectorAll('.root').length;
-  const people=allPersonElements();
-   const deceased=people.filter(e=>e.classList.contains('deceased-card')).length + 1; // Rebecca
-  const children=[...document.querySelectorAll('.child-card')].length;
-  const grandchildren=[...document.querySelectorAll('.grandchild')].length;
-  p.innerHTML=`<h3>📊 La famille en chiffres</h3>
-    <div class="statline"><span>Branches principales</span><b>${roots}</b></div>
-    <div class="statline"><span>Personnes affichées</span><b>${people.length + 1}</b></div>
-    <div class="statline"><span>Descendants directs</span><b>${children}</b></div>
-    <div class="statline"><span>Génération suivante</span><b>${grandchildren}</b></div>
-    <div class="statline"><span>Personnes honorées</span><b>${deceased}</b></div>`;
-  p.style.display='block';
-}
-function toggleMiniMap(){
-  const m=document.getElementById('miniMap');
-  if(m.style.display==='block'){m.style.display='none';return}
-  m.style.display='block'; buildMiniMap();
-}
- function toggleFamilyMode(){
-   if(document.body.classList.contains('family-focus')){
-     document.querySelectorAll('.root').forEach(r=>r.classList.remove('family-hidden'));
-     document.body.classList.remove('family-focus');
-     return;
-   }
-   const panel=document.getElementById('descPanel');
-   const backdrop=document.getElementById('tributeBackdrop');
-   panel.classList.remove('tribute-panel');panel.style.display='block';backdrop.classList.add('open');
-   const roots=[...document.querySelectorAll('.root')];
-   panel.innerHTML=`<button class="panel-close" onclick="closePanels()">✕</button>
-     <h3>👪 Famille proche</h3>
-     <p class="search-help">Choisis une branche pour ne garder à l’écran que cette famille proche.</p>
-     <div class="search-results">${roots.map((r,i)=>{
-       const name=r.querySelector('.card .name')?.textContent.trim()||`Branche ${i+1}`;
-       return `<button onclick="focusFamily(${i})">🌿 ${name}</button>`;
-     }).join('')}</div>`;
- }
- function focusFamily(index){
-   document.querySelectorAll('.root').forEach((r,i)=>r.classList.toggle('family-hidden',i!==index));
-   document.body.classList.add('family-focus');
-   closePanels();
-   fitTree();
- }
- function showLegend(){
-   const panel=document.getElementById('descPanel');
-   const backdrop=document.getElementById('tributeBackdrop');
-   panel.classList.remove('tribute-panel');panel.style.display='block';backdrop.classList.add('open');
-   panel.innerHTML=`<button class="panel-close" onclick="closePanels()">✕</button>
-     <h3>🗂️ Légende de l’arbre</h3>
-     <div class="legend-item"><span class="legend-swatch legend-root"></span><span>Branche principale / parent</span></div>
-     <div class="legend-item"><span class="legend-swatch legend-child"></span><span>Enfant</span></div>
-     <div class="legend-item"><span class="legend-swatch legend-grandchild"></span><span>Petit-enfant ou génération suivante</span></div>
-     <div class="legend-item"><span class="legend-swatch legend-honour"></span><span>Personne honorée ou décédée 🕊️</span></div>`;
- }
- async function shareTree(){
-   const shareData={title:'Arbre généalogique de la famille',text:'Découvre notre arbre généalogique familial.',url:location.href};
-   try{
-     if(navigator.share){await navigator.share(shareData);return}
-     await navigator.clipboard.writeText(location.href);
-     alert('Le lien de l’arbre a été copié. Tu peux maintenant le partager.');
-   }catch(e){
-     if(e.name!=='AbortError')alert('Le partage n’est pas disponible sur cet appareil.');
-   }
- }
-function buildMiniMap(){
-  const m=document.getElementById('miniMap');m.innerHTML='';
-  const wr=world.getBoundingClientRect(); const s=scale;
-  const W=world.scrollWidth,H=world.scrollHeight;
-  allPersonElements().forEach(el=>{
-    const r=el.getBoundingClientRect();
-    const dot=document.createElement('div');dot.className='dot'+(el.classList.contains('deceased-card')?' deceased':'');
-    dot.style.left=((r.left-wr.left)/s/W*100)+'%';dot.style.top=((r.top-wr.top)/s/H*100)+'%';
-    dot.title=personText(el);dot.onclick=()=>centerOn(el);m.appendChild(dot);
-  });
-}
-function centerOn(el){
-  const r=el.getBoundingClientRect();const cx=innerWidth/2,cy=innerHeight/2;
-  x+=(cx-(r.left+r.width/2));y+=(cy-(r.top+r.height/2));render();
-}
-function showDescendantsPrompt(){
-  const panel=document.getElementById('descPanel');
-  const backdrop=document.getElementById('tributeBackdrop');
-  panel.classList.remove('tribute-panel');
-  panel.style.display='block';
-  backdrop.classList.add('open');
-  panel.innerHTML=`<button class="panel-close" onclick="closePanels()">✕</button>
-    <h3>🌳 Rechercher un membre</h3>
-    <p class="search-help">Écris un prénom ou choisis une personne dans la liste pour voir ses descendants.</p>
-    <div class="search-row">
-      <input id="descSearchInput" type="search" placeholder="Ex. Pasy, Kim, Papy…" autocomplete="off">
-      <button onclick="searchDescendants()">Rechercher</button>
-    </div>
-    <div id="descSearchResults" class="search-results"></div>`;
-  const input=document.getElementById('descSearchInput');
-  input.addEventListener('input',searchDescendants);
-  input.addEventListener('keydown',e=>{if(e.key==='Enter')searchDescendants()});
-  renderDescendantResults('');
-  setTimeout(()=>input.focus(),50);
- }
- function normalizeSearch(value){
-   return value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
- }
- function renderDescendantResults(query){
-   const result=document.getElementById('descSearchResults');
-   if(!result)return;
-   const q=normalizeSearch(query);
-   const people=allPersonElements()
-     .map(e=>({name:personText(e),element:e}))
-     .filter((person,index,all)=>all.findIndex(p=>normalizeSearch(p.name)===normalizeSearch(person.name))===index)
-     .filter(person=>!q||normalizeSearch(person.name).includes(q));
-   result.innerHTML=people.length
-     ? people.map(person=>`<button type="button" data-person-name="${person.name.replace(/"/g,'&quot;')}">🌿 ${person.name}</button>`).join('')
-     : '<div class="descItem">Aucun membre trouvé.</div>';
-   result.querySelectorAll('button[data-person-name]').forEach(button=>{
-     button.addEventListener('click',()=>showDescendants(button.dataset.personName));
-   });
- }
- function searchDescendants(){
-   const input=document.getElementById('descSearchInput');
-   if(!input)return;
-   const exact=allPersonElements().find(e=>normalizeSearch(personText(e))===normalizeSearch(input.value));
-   if(exact){showDescendants(personText(exact));return}
-   renderDescendantResults(input.value);
-}
-function showDescendants(targetName){
-  const panel=document.getElementById('descPanel');panel.style.display='block';panel.classList.remove('tribute-panel');
-  document.getElementById('tributeBackdrop').classList.remove('open');
-  let target=[...allPersonElements()].find(e=>personText(e).toLowerCase()===targetName.toLowerCase());
-  if(!target)return;
-  let descendants=[];
-  if(target.classList.contains('grandchild')) descendants=[];
-  else if(target.classList.contains('child-card')){
-    const wrap=target.closest('.child-wrap'); descendants=[...wrap.querySelectorAll('.grandchild')].map(e=>personText(e));
-  } else if(target.closest('.root')){
-    const root=target.closest('.root'); descendants=[...root.querySelectorAll('.child-card,.grandchild')].map(e=>personText(e));
-  } else descendants=[...document.querySelectorAll('.child-card,.grandchild')].map(e=>personText(e));
-  panel.innerHTML=`<button class="panel-close" onclick="closePanels()">✕</button><h3>🌳 Descendants de ${targetName}</h3>`+(descendants.length?descendants.map(n=>`<div class="descItem">${n}</div>`).join(''):'<div class="descItem">Aucun descendant renseigné.</div>');
-  centerOn(target);target.classList.add('person-selected');setTimeout(()=>target.classList.remove('person-selected'),1800);
-}
-function toggleEditMode(){
-  editing=!editing;document.body.classList.toggle('editing',editing);
-  const hint=document.getElementById('editHint');
-  if(editing){
-    document.querySelectorAll('.card,.child-card,.grandchild').forEach(el=>el.onclick=()=>openEdit(el));
-    hint.classList.add('show');
-    clearTimeout(window.editHintTimer);
-    window.editHintTimer=setTimeout(()=>hint.classList.remove('show'),7000);
-  }else{
-    document.querySelectorAll('.card,.child-card,.grandchild').forEach(el=>el.onclick=null);
-    hint.classList.remove('show');
-  }
-}
-function openEdit(el){
-  editTarget=el;document.getElementById('editName').value=personText(el);
-  document.getElementById('editStatus').value=el.classList.contains('deceased-card')?'deceased':'normal';
-  document.getElementById('editNote').value=el.dataset.note||'';
-  document.getElementById('editModal').classList.add('open');
-}
-function closeEdit(){document.getElementById('editModal').classList.remove('open');editTarget=null}
-function saveEdit(){
-  if(!editTarget)return;
-  const name=document.getElementById('editName').value.trim();if(!name)return;
-  if(editTarget.querySelector('.name')) editTarget.querySelector('.name').textContent=name; else editTarget.childNodes[0].nodeValue=name;
-  editTarget.classList.toggle('deceased-card',document.getElementById('editStatus').value==='deceased');
-  editTarget.dataset.note=document.getElementById('editNote').value.trim();saveState();closeEdit();
-}
-function saveState(){
-  const data=allPersonElements().map((e,i)=>({i,text:personText(e),deceased:e.classList.contains('deceased-card'),note:e.dataset.note||''}));
-  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(e){}
-}
-function restoreState(){
-  markDeceased();
-  try{
-    const data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!Array.isArray(data))return;
-    const els=allPersonElements();data.forEach(d=>{const e=els[d.i];if(!e)return;if(e.querySelector('.name'))e.querySelector('.name').textContent=d.text;else e.childNodes[0].nodeValue=d.text;e.classList.toggle('deceased-card',!!d.deceased);if(d.note)e.dataset.note=d.note});
-  }catch(e){}
-}
-function showTributes(){
-  const panel=document.getElementById('descPanel');
-  const backdrop=document.getElementById('tributeBackdrop');
-  panel.style.display='block';panel.classList.add('tribute-panel');backdrop.classList.add('open');
-   const tributePeople=[
-    {name:'Rebecca',note:'À la mémoire de Rebecca, à l’origine de cette histoire familiale. ❤️'},
-     {name:'Dan',note:'À la mémoire de Dan. Que son souvenir reste vivant dans la famille. ❤️‍🩹🕊️'},
-     {name:'Hervé',note:'À la mémoire de Hervé, avec affection et respect. ❤️‍🩹🕊️'},
-     {name:'Etiel',note:'À la mémoire d’Etiel, dont la présence et la gentillesse restent gravées dans nos cœurs. ❤️‍🩹🕊️'},
-     {name:'Jean-Paul',note:'À la mémoire de Jean-Paul, avec tendresse et affection. Son souvenir accompagne toute la famille. ❤️‍🩹🕊️'},
-     {name:'Manu',note:'À la mémoire de Manu, une pensée douce pour garder vivant son souvenir parmi nous. ❤️‍🩹🕊️'}
-  ];
-  const byName=new Map(allPersonElements().map(e=>[personText(e).toLowerCase(),e]));
-   panel.innerHTML=`<button class="panel-close" onclick="closePanels()">✕</button><h3>🕊️ Fiches hommage</h3><p class="tribute-intro">Six membres de la famille sont actuellement honorés ici. Tu peux personnaliser leur petit mot depuis le mode ✏️ Édition lorsqu’ils sont présents dans l’arbre.</p>`+
-    tributePeople.map(t=>{const el=byName.get(t.name.toLowerCase());const note=el?.dataset.note||t.note;return `<div class="tribute-card deceased"><b>${t.name}</b><br><small>${note}</small></div>`}).join('');
-}
-function exportTree(){
-  const clone=document.documentElement.cloneNode(true);
-   clone.querySelectorAll('#toolbar,#featurebar,#statsPanel,#miniMap,#descPanel,#editHint,#editModal,#tributeBackdrop').forEach(e=>e.remove());
-  const out='<!DOCTYPE html>\n'+clone.outerHTML;
-  const blob=new Blob([out],{type:'text/html;charset=utf-8'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='arbre_genealogique_famille.html';a.click();URL.revokeObjectURL(a.href);
-}
-restoreState();
-
-// Sur mobile, un toucher sur Navigation ouvre/ferme le petit panneau.
-document.getElementById('navTitle').addEventListener('click', toggleNav);
-
-/* ===== Protection par mot de passe ===== */
-const FAMILY_PASSWORD = 'Famille#2026!';
-const loginForm = document.getElementById('loginForm');
-const loginScreen = document.getElementById('loginScreen');
-const passwordInput = document.getElementById('passwordInput');
-const loginError = document.getElementById('loginError');
-
-function unlockTree(){
-  loginScreen.classList.add('hidden');
-  document.body.classList.remove('locked');
-  passwordInput.value='';
-  loginError.textContent='';
-  setTimeout(()=>{ if(typeof fitTree==='function') fitTree(); }, 50);
-}
-
-loginForm.addEventListener('submit', function(e){
-  e.preventDefault();
-  if(passwordInput.value === FAMILY_PASSWORD){
-    unlockTree();
-  }else{
-    loginError.textContent='❌ Mot de passe incorrect.';
-    passwordInput.select();
-  }
-});
-
-
-</script>
-</div>
-</body>
-</html>
+<div class="modal" id="editModal">
+<div class="modalbox">
+<h2 id="editModalTitle">✏️ Modifier la personne</h2>
+<label>Prénom / nom</label>
+<input id="editName" type="text"/>
+<label>Statut</label>
+<select id="editStatus"><option value="normal">Normal</option><option value="deceased">Décédé 🕊️</option></select>
+<label>Couleur de la personne</label>
+<div class="color-editor-row">
+<input id="editColor" title="Choisir une couleur" type="color" val
